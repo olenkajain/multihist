@@ -58,6 +58,27 @@ class MultiHistBase(object):
         """Returns number of data points loaded into histogram"""
         return np.sum(self.histogram)
 
+    def rebin(self, rebin_factors):
+        """Rebins a histogram
+        :param rebin_factors: Tuple with bin multipier for each dimension
+        :return: Rebinned histogram
+        """
+
+        # Create new histogram with rebinned shape
+        newhist = deepcopy(self)
+        new_shape = np.array(self.histogram.shape) * np.array(rebin_factors)
+        newhist.histogram = np.zeros(new_shape.astype(int))
+
+        # Fill new histogram with data
+        bin_centers = self.bin_centers()
+        it = np.nditer(self.histogram, flags=['multi_index'])
+        while not it.finished:
+            position = np.array([bin_centers[i][v] for i, v in enumerate(it.multi_index)])
+            newhist.histogram[newhist.get_bin_indices(position)] += it[0]
+            it.iternext()
+
+        return newhist
+
     # Overload binary numeric operators to work on histogram
     # TODO: logical operators
 
@@ -398,7 +419,10 @@ class Histdd(MultiHistBase):
 
     def rebin_axis(self, reduction_factor, axis):
         """Returns histogram where bins along axis have been reduced by reduction_factor"""
-        raise NotImplementedError
+        axis = self.get_axis_number(axis)
+        rebin_factors = np.ones(len(self.dimensions))
+        rebin_factors[axis] /= reduction_factor
+        return self.rebin(rebin_factors)
 
     def slice(self, start, stop=None, axis=0):
         """Restrict histogram to bins whose data values (not bin numbers) along axis are between start and stop
