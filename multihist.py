@@ -69,9 +69,10 @@ class MultiHistBase(object):
         new_shape = np.array(self.histogram.shape) * np.array(rebin_factors)
         newhist.histogram = np.zeros(new_shape.astype(int))
         if self.bin_edges.ndim > 1:
-                newhist.bin_edges = np.array([np.linspace(dim[0],
-                                                          dim[-1],
-                                                          int((len(dim)-1)*rebin_factors[i])+1) for i, dim in enumerate(self.bin_edges)])
+            newhist.bin_edges = np.array([np.linspace(dim[0],
+                                                      dim[-1],
+                                                      int((len(dim)-1)*rebin_factors[i])+1) 
+                                                      for i, dim in enumerate(self.bin_edges)])
         else:
             newhist.bin_edges = np.linspace(self.bin_edges[0],
                                             self.bin_edges[-1],
