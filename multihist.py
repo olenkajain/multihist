@@ -64,17 +64,34 @@ class MultiHistBase(object):
         :return: Rebinned histogram
         """
 
-        # Create new histogram with rebinned shape
+        # Create new histogram with rebinned shape and bin edges
         newhist = deepcopy(self)
         new_shape = np.array(self.histogram.shape) * np.array(rebin_factors)
         newhist.histogram = np.zeros(new_shape.astype(int))
+        if self.bin_edges.ndim > 1:
+                newhist.bin_edges = np.array([np.linspace(dim[0],
+                                                          dim[-1],
+                                                          int((len(dim)-1)*rebin_factors[i])+1) for i, dim in enumerate(self.bin_edges)])
+        else:
+            newhist.bin_edges = np.linspace(self.bin_edges[0],
+                                            self.bin_edges[-1],
+                                            int((len(self.bin_edges)-1)*rebin_factors))
 
         # Fill new histogram with data
-        bin_centers = self.bin_centers()
         it = np.nditer(self.histogram, flags=['multi_index'])
         while not it.finished:
-            position = np.array([bin_centers[i][v] for i, v in enumerate(it.multi_index)])
-            newhist.histogram[newhist.get_bin_indices(position)] += it[0]
+            bin_centers = self.bin_centers
+            if bin_centers.ndim == 1:
+                position = self.bin_centers[it.multi_index]
+                if position == newhist.bin_edges[-1]:
+                    new_bins = len(newhist.bin_edges) - 2
+                else:
+                    new_bins = np.searchsorted(newhist.bin_edges, [position], side='right')[0] - 1
+            else:
+                position = np.array([bin_centers[i][v] for i, v in enumerate(it.multi_index)])
+                new_bins = newhist.get_bin_indices(position)
+
+            newhist.histogram[new_bins] += it[0]
             it.iternext()
 
         return newhist
