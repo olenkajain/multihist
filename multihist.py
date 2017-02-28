@@ -73,10 +73,6 @@ class MultiHistBase(object):
                                                       dim[-1],
                                                       int((len(dim)-1)*rebin_factors[i])+1) for i, dim in enumerate(self.bin_edges)])
         else:
-            try:
-                rebin_factors = rebin_factors[0]
-            except:
-                pass
             newhist.bin_edges = np.linspace(self.bin_edges[0],
                                             self.bin_edges[-1],
                                             int((len(self.bin_edges)-1)*rebin_factors)+1)
@@ -102,7 +98,6 @@ class MultiHistBase(object):
                 it.iternext()
 
             return newhist
-
 
     # Overload binary numeric operators to work on histogram
     # TODO: logical operators
