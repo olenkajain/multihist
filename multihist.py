@@ -68,34 +68,43 @@ class MultiHistBase(object):
         newhist = deepcopy(self)
         new_shape = np.array(self.histogram.shape) * np.array(rebin_factors)
         newhist.histogram = np.zeros(new_shape.astype(int))
-        if self.bin_edges.ndim > 1:
+        if len(new_shape) > 1:
+            print('Histdd')
             newhist.bin_edges = np.array([np.linspace(dim[0],
                                                       dim[-1],
-                                                      int((len(dim)-1)*rebin_factors[i])+1) 
-                                                      for i, dim in enumerate(self.bin_edges)])
+                                                      int((len(dim)-1)*rebin_factors[i])+1) for i, dim in enumerate(self.bin_edges)])
         else:
+            print('Hist1d')
+            try:
+                rebin_factors = rebin_factors[0]
+            except:
+                pass
             newhist.bin_edges = np.linspace(self.bin_edges[0],
                                             self.bin_edges[-1],
-                                            int((len(self.bin_edges)-1)*rebin_factors))
+                                            int((len(self.bin_edges)-1)*rebin_factors)+1)
 
         # Fill new histogram with data
-        it = np.nditer(self.histogram, flags=['multi_index'])
-        while not it.finished:
-            bin_centers = self.bin_centers
-            if bin_centers.ndim == 1:
-                position = self.bin_centers[it.multi_index]
+        if len(new_shape) == 1:
+            bin_centers = np.array(self.bin_centers)
+            for i, b in enumerate(self.histogram):
+                position = bin_centers[i]
                 if position == newhist.bin_edges[-1]:
-                    new_bins = len(newhist.bin_edges) - 2
+                    new_bin = len(newhist.bin_edges) - 2
                 else:
-                    new_bins = np.searchsorted(newhist.bin_edges, [position], side='right')[0] - 1
-            else:
-                position = np.array([bin_centers[i][v] for i, v in enumerate(it.multi_index)])
-                new_bins = newhist.get_bin_indices(position)
+                    new_bin = np.searchsorted(newhist.bin_edges, [position], side='right')[0] - 1
+                newhist.histogram[new_bin] += b
+            return newhist
+        else:
+            bin_centers = self.bin_centers()
+            it = np.nditer(self.histogram, flags=['multi_index'])
+            rf = np.array(rebin_factors)
+            while not it.finished:
+                new_index = (it.multi_index * rf).astype(int)
+                newhist.histogram[new_index] += it[0]
+                it.iternext()
 
-            newhist.histogram[new_bins] += it[0]
-            it.iternext()
+            return newhist
 
-        return newhist
 
     # Overload binary numeric operators to work on histogram
     # TODO: logical operators
